@@ -1,0 +1,90 @@
+name: Helm chart
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'charts/**'
+      - 'docs/**'
+      - '.github/workflows/helm-chart.yml'
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint charts/tools
+      - run: helm template test charts/tools --set ingress.enabled=true --set autoscaling.enabled=true > /dev/null
+
+  publish:
+    needs: lint
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      OWNER: ${{ github.repository_owner }}
+      REPO: ${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+
+      - name: Package chart
+        id: package
+        run: |
+          helm package charts/tools --destination .packaged
+          echo "version=$(helm show chart charts/tools | awk '/^version:/ {print $2}')" >> "$GITHUB_OUTPUT"
+
+      # OCI registry: helm install tools oci://ghcr.io/<owner>/charts/tools
+      - name: Push chart to GHCR (OCI)
+        run: |
+          owner="${OWNER,,}"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+          helm push .packaged/tools-*.tgz "oci://ghcr.io/${owner}/charts"
+
+      # Classic Helm repository on GitHub Pages: helm repo add tools https://<owner>.github.io/<repo>
+      - name: Build Pages site (Helm repo index + docs)
+        env:
+          VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          owner="${OWNER,,}"
+          pages_url="https://${owner}.github.io/${REPO}"
+          mkdir site
+          # keep previously published chart versions
+          if curl -fsSL "${pages_url}/index.yaml" -o old-index.yaml; then
+            grep -oE 'https?://[^ ]+\.tgz' old-index.yaml | sort -u | while read -r url; do
+              curl -fsSL "$url" -o "site/$(basename "$url")" || true
+            done
+          fi
+          cp .packaged/tools-*.tgz site/
+          helm repo index site --url "$pages_url"
+          sed -e "s#__PAGES_URL__#${pages_url}#g" \
+              -e "s#__OWNER__#${owner}#g" \
+              -e "s#__REPO__#${REPO}#g" \
+              -e "s#__CHART_VERSION__#${VERSION}#g" \
+              docs/index.html > site/index.html
+          touch site/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy-pages:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

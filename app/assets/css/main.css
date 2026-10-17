@@ -1,0 +1,41 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+:root {
+  --ui-radius: 0.5rem;
+  --ui-bg: #ffffff;
+  --ui-bg-muted: #fafafa;
+  --ui-bg-elevated: #f4f4f5;
+  --ui-border: #e4e4e7;
+  --ui-border-muted: #e4e4e7;
+}
+
+.dark {
+  --ui-bg: #09090b;
+  --ui-bg-muted: #0c0c0f;
+  --ui-bg-elevated: #18181b;
+  --ui-border: #27272a;
+  --ui-border-muted: #27272a;
+}
+
+body {
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* subtle dotted backdrop behind the page, fading out downwards */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(var(--ui-border) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, black, transparent 55%);
+}

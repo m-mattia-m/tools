@@ -1,0 +1,14 @@
+Tools has been deployed.
+
+{{- if .Values.ingress.enabled }}
+Open it at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+Reach it locally with:
+
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "tools.fullname" . }} 8080:{{ .Values.service.port }}
+
+and open http://localhost:8080
+{{- end }}

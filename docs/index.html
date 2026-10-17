@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools Helm chart</title>
+  <style>
+    :root { --bg:#fff; --fg:#09090b; --muted:#71717a; --border:#e4e4e7; --code:#f4f4f5; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#09090b; --fg:#fafafa; --muted:#a1a1aa; --border:#27272a; --code:#18181b; } }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    main { max-width:52rem; margin:0 auto; padding:3rem 1rem 5rem; }
+    h1 { font-size:2rem; letter-spacing:-.02em; margin:0 0 .25rem; }
+    h2 { font-size:1.3rem; margin:2.5rem 0 .5rem; padding-bottom:.3rem; border-bottom:1px solid var(--border); letter-spacing:-.01em; }
+    p { margin:.5rem 0; } .muted { color:var(--muted); }
+    a { color:inherit; text-underline-offset:3px; }
+    code { font:.875em ui-monospace,"SF Mono",Menlo,monospace; background:var(--code); padding:.15em .4em; border-radius:6px; }
+    .block { position:relative; margin:.75rem 0; }
+    pre { margin:0; padding:1rem; overflow:auto; background:var(--code); border:1px solid var(--border); border-radius:10px; font:.85rem/1.6 ui-monospace,"SF Mono",Menlo,monospace; }
+    pre code { background:none; padding:0; }
+    button.copy { position:absolute; top:.5rem; right:.5rem; border:1px solid var(--border); background:var(--bg); color:var(--fg); border-radius:6px; font-size:.75rem; padding:.2rem .5rem; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; font-size:.9rem; display:block; overflow-x:auto; }
+    th, td { text-align:left; padding:.45rem .7rem; border:1px solid var(--border); vertical-align:top; }
+    th { background:var(--code); }
+    .badge { display:inline-block; font-size:.8rem; border:1px solid var(--border); border-radius:999px; padding:.1rem .6rem; color:var(--muted); }
+  </style>
+</head>
+<body>
+<main>
+  <p class="badge">Helm chart · version __CHART_VERSION__</p>
+  <h1>Tools</h1>
+  <p class="muted">A Helm chart for the <a href="https://github.com/__OWNER__/__REPO__">Tools</a> app: browser-only developer tools served as a static site by nginx (non-root, port 8080).</p>
+
+  <h2>Install from the OCI registry (GHCR)</h2>
+  <div class="block"><pre><code>helm install tools oci://ghcr.io/__OWNER__/charts/tools --version __CHART_VERSION__</code></pre></div>
+  <p class="muted">Only pull the chart: <code>helm pull oci://ghcr.io/__OWNER__/charts/tools --version __CHART_VERSION__</code></p>
+
+  <h2>Install from the Helm repository</h2>
+  <div class="block"><pre><code>helm repo add tools __PAGES_URL__
+helm repo update
+helm install tools tools/tools</code></pre></div>
+
+  <h2>Expose it with an Ingress</h2>
+  <div class="block"><pre><code># values.yaml
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: tools.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: tools-tls
+      hosts:
+        - tools.example.com</code></pre></div>
+  <div class="block"><pre><code>helm upgrade --install tools oci://ghcr.io/__OWNER__/charts/tools -f values.yaml</code></pre></div>
+
+  <h2>Try it without an Ingress</h2>
+  <div class="block"><pre><code>kubectl port-forward svc/tools 8080:80</code></pre></div>
+
+  <h2>Values</h2>
+  <table>
+    <thead><tr><th>Key</th><th>Default</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>replicaCount</code></td><td><code>1</code></td><td>Number of pods (ignored with autoscaling)</td></tr>
+      <tr><td><code>image.repository</code></td><td><code>ghcr.io/__OWNER__/__REPO__</code></td><td>Container image</td></tr>
+      <tr><td><code>image.tag</code></td><td><code>""</code></td><td>Image tag, defaults to the chart <code>appVersion</code> (<code>latest</code>)</td></tr>
+      <tr><td><code>image.pullPolicy</code></td><td><code>IfNotPresent</code></td><td>Image pull policy</td></tr>
+      <tr><td><code>imagePullSecrets</code></td><td><code>[]</code></td><td>Secrets for a private registry</td></tr>
+      <tr><td><code>nameOverride</code> / <code>fullnameOverride</code></td><td><code>""</code></td><td>Override resource names</td></tr>
+      <tr><td><code>serviceAccount.create</code></td><td><code>true</code></td><td>Create a service account</td></tr>
+      <tr><td><code>serviceAccount.automount</code></td><td><code>false</code></td><td>Mount the API token into pods</td></tr>
+      <tr><td><code>serviceAccount.annotations</code> / <code>.name</code></td><td><code>{}</code> / <code>""</code></td><td>Annotations and custom name</td></tr>
+      <tr><td><code>podAnnotations</code> / <code>podLabels</code></td><td><code>{}</code></td><td>Extra pod metadata</td></tr>
+      <tr><td><code>podSecurityContext</code></td><td>non-root uid 101, seccomp <code>RuntimeDefault</code></td><td>Pod security context</td></tr>
+      <tr><td><code>securityContext</code></td><td>no privilege escalation, drop <code>ALL</code></td><td>Container security context</td></tr>
+      <tr><td><code>service.type</code></td><td><code>ClusterIP</code></td><td>Service type</td></tr>
+      <tr><td><code>service.port</code></td><td><code>80</code></td><td>Service port (forwards to container port 8080)</td></tr>
+      <tr><td><code>ingress.enabled</code></td><td><code>false</code></td><td>Create an Ingress</td></tr>
+      <tr><td><code>ingress.className</code></td><td><code>""</code></td><td>Ingress class</td></tr>
+      <tr><td><code>ingress.annotations</code></td><td><code>{}</code></td><td>Ingress annotations</td></tr>
+      <tr><td><code>ingress.hosts</code></td><td><code>tools.example.com</code></td><td>Hosts and paths</td></tr>
+      <tr><td><code>ingress.tls</code></td><td><code>[]</code></td><td>TLS configuration</td></tr>
+      <tr><td><code>resources</code></td><td><code>{}</code></td><td>CPU / memory requests and limits</td></tr>
+      <tr><td><code>livenessProbe</code> / <code>readinessProbe</code></td><td>HTTP GET <code>/</code></td><td>Probes</td></tr>
+      <tr><td><code>autoscaling.enabled</code></td><td><code>false</code></td><td>Create a HorizontalPodAutoscaler</td></tr>
+      <tr><td><code>autoscaling.minReplicas</code> / <code>maxReplicas</code></td><td><code>1</code> / <code>5</code></td><td>Replica range</td></tr>
+      <tr><td><code>autoscaling.targetCPUUtilizationPercentage</code></td><td><code>80</code></td><td>CPU target</td></tr>
+      <tr><td><code>nodeSelector</code> / <code>tolerations</code> / <code>affinity</code></td><td><code>{}</code> / <code>[]</code> / <code>{}</code></td><td>Scheduling</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Upgrade &amp; uninstall</h2>
+  <div class="block"><pre><code>helm upgrade tools oci://ghcr.io/__OWNER__/charts/tools --version &lt;new-version&gt;
+helm uninstall tools</code></pre></div>
+
+  <p class="muted" style="margin-top:3rem">The app runs entirely in the browser and keeps no state, so there is nothing to back up. <a href="https://github.com/__OWNER__/__REPO__">Source on GitHub</a></p>
+</main>
+<script>
+  document.querySelectorAll('.block').forEach(function (block) {
+    var b = document.createElement('button');
+    b.className = 'copy'; b.textContent = 'Copy';
+    b.onclick = function () {
+      navigator.clipboard.writeText(block.querySelector('pre').innerText).then(function () {
+        b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500);
+      });
+    };
+    block.appendChild(b);
+  });
+</script>
+</body>
+</html>

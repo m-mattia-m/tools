@@ -1,0 +1,12 @@
+node_modules
+.nuxt
+.output
+.git
+.idea
+.claude
+tmp
+.github
+Dockerfile
+charts
+docs
+README.md

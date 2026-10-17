@@ -1,0 +1,80 @@
+# Number of pods. Ignored when autoscaling.enabled is true.
+replicaCount: 1
+
+image:
+  repository: ghcr.io/m-mattia-m/tools
+  # Defaults to the chart's appVersion when empty.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: false
+  annotations: {}
+  # Generated from the fullname when empty.
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# The image runs as the non-root nginx user (uid 101) on port 8080.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  fsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: tools.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: tools-tls
+  #    hosts:
+  #      - tools.example.com
+
+resources: {}
+#  requests:
+#    cpu: 10m
+#    memory: 32Mi
+#  limits:
+#    memory: 64Mi
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
